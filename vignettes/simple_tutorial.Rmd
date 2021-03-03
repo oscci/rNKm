@@ -9,15 +9,19 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-본 튜토리얼은 NK Landscape를 생성하기 위한 기본적인 함수 사용법을 보여준다. 이외에도 NK Landscape는 low dimensionality나 modularity, 그리고 비대칭적 의존성, part-whole의 디자인을 비롯하여 환경의 불확실성, 충격적 사건의 발생, 서로 다른 복수의 landscape 사이의 상호 관계 등과 관련되어서도 논의될 수 있다. 이와 같은 접근들을 rNKm 패키지의 확장된 기능들과 모델링 기술을 결합하여 효과적으로 모델링될 수 있다.
+This tutorial shows how to use the basic functions to create NK Landscape. In addition, NK Landscape can be discussed in relation to low dimensionality, modularity, asymmetric dependence, part-whole design, environmental uncertainty, occurrence of shocking events, and interrelationships between multiple different landscapes. These approaches can be modeled effectively by combining the extended functions of the rNKm package and modeling technology.
 
-## Landscape 생성 함수
+## Landscape 
 ```{r,eval=FALSE}
+
+#library(devtools)
+#install_github("drtagkim/rNKm")
+
 library(rNKm) #라이브러리 읽기
 fun <- landscape_gen(N=4,K=0) #landscape generation function
 ```
 ## 전체 Fitness values 구하기
-전체 값을 한 번에 구하려면 create_landscape() 함수를 사용한다.
+To get the entire value at once, use the create_landscape() function.
 
 ```{r,eval=FALSE}
 library(rNKm) #라이브러리 읽기
@@ -25,16 +29,16 @@ fun <- landscape_gen(N=4,K=0) #landscape generation function
 land <- create_landscape(N=4,K=0,fun)
 ```
 
-land$landscape는 다음과 같이 보일 것이다.
+land$landscape Would look like this:
 
 ```{r,echo=FALSE,results='asis'}
-library(rNKm, quietly=TRUE,warn.conflicts=FALSE) #라이브러리 읽기
+library(rNKm, quietly=TRUE,warn.conflicts=FALSE) #Library reading
 fun <- landscape_gen(N=4,K=0) #landscape generation function
 land <- create_landscape(N=4,K=0,fun)
 knitr::kable(land$landscape)
 ```
 
-Landscape generation 함수를 생성한 다음 개별적으로 fitness 값들을 골라 볼 수도 있다.
+Landscape generation. After creating a function, you can choose individual fitness values.
 
 ```{r,eval=FALSE}
 locations <- create_locations(N=4)
@@ -42,24 +46,30 @@ fun(locations[1,]) # (0,0,0,0)인 경우
 fun(locations[2,]) # (1,0,0,0)인 경우
 ```
 
-10진수의 2진수 변환은 왼쪽에서 오른쪽 순서다. 따라서 5를 2진수 변환한 표현은 (1,0,1,0), 즉 $2^0 \times 1 + 2^1 \times 0 + 2^2 \times 1 + 2^3 \times 0 = 5$이다. 
+The binary conversion of decimal numbers is from left to right. So the binary conversion of 5 is (1,0,1,0), that is, $2^0 \times 1 + 2^1 \times 0 + 2^2 \times 1 + 2^3 \times 0 = 5$ to be.
 
 ## Influence Matrix
 
-Influence Matrix (IM)은 component elements 간의 상호 의존성을 나타낸다. 아무런 의존이 없는 상태에서도 최소한 자기와의 의존성(즉, 존재한다는 사실 그 자체)은 표현해야 한다. 예를 들어 4 by 4 identity matrix가 그러하다.
+The Influence Matrix (IM) represents the interdependence between component elements. Even in the absence of any dependence, you must at least express your dependence (that is, the fact that you exist). For example, a 4 by 4 identity matrix.
+
+
 
 ```{r,eval=TRUE}
 diag(4)
 ```
 
-행 축이 to, 열 축이 from의 의미가 있다면 association 관계를 생각할 수 있다. 이와 같은 의존성(dependency) 표현은 개념적 관계를 모델링하는 사람들에게는 친숙한 일이다. 의존 관계가 있을 때 1이라 표현한다면 예를 들어 다음과 같은 4 by 4 행렬의 influence matrix를 구성할 수 있다.
+If the row axis means to and the column axis means from, you can think of an association relationship. This expression of dependency is familiar to those who model conceptual relationships. If it is expressed as 1 when there is a dependency relationship, for example, the influence matrix of the following 4 by 4 matrix can be constructed.
+
+
 
 ```{r, eval=TRUE}
 inf_mat <- matrix(c(1,1,1,0,0,1,1,1,1,0,1,1,1,1,0,1),4)
 inf_mat
 ```
 
-1번은 3번과 4번 element를, 2번은 1번과 4번을, 3번은 1, 2를, 4번은 2, 3번과 의존 관계에 있다. 이와 같은 의존 관계를 정의하지 않을 경우, landscape_gen()이나 landscape_gen_lowdim()은 항상 최근방 의존성을 가정한다. 즉, 다음과 같은 형태의 행렬을 생각하게 된다.
+No. 1 has a dependency relationship with elements 3 and 4, No. 2 with Nos. 1 and 4, No. 3 with Nos. 1 and 2, and No. 4 with Nos. 2 and 3. If such a dependency relationship is not defined, landscape_gen() or landscape_gen_lowdim() always assumes the latest room dependency. That is, a matrix in the form of
+
+
 
 ```{r, eval=TRUE}
 inf_mat <- matrix(c(1,1,0,0,0,1,1,0,0,0,1,1,1,0,0,1),4)
@@ -68,7 +78,9 @@ inf_mat
 
 ## Contribution Matrix
 
-의존 관계를 구체적인 fitness value로 표현하기 위하여 의존이 발생되는 위치 정보를 함수에 알려줘야 한다. 물론, landscape_gen()이나 landscape_gen_lowdim() 함수에 이 정보를 알려주지 않으면 기본적인 형태의 influence matrix만으로 의존 관계를 표현하는 contribution matrix를 구성한다. Contribution matrix는 다음과 같이 대단히 간단하게 생성할 수 있다.
+In order to express the dependence relationship as a specific fitness value, the location information where the dependence occurs must be informed to the function. Of course, if this information is not provided to the landscape_gen() or landscape_gen_lowdim() functions, a contribution matrix that expresses the dependency relationship is constructed only with the basic form of the influence matrix. The contribution matrix can be created very simply as follows.
+
+
 
 ```{r, eval=TRUE}
 inf_mat <- matrix(c(1,1,1,0,0,1,1,1,1,0,1,1,1,1,0,1),4)
@@ -76,7 +88,7 @@ contr_mat <- convert_influence_contribution(inf_mat)
 contr_mat
 ```
 
-Contribution matrix는 PI(Part Interdependency) 파라미터에 전달한다.
+Contribution matrix is transferred to PI (Part Interdependency) parameter.
 
 ```{r,eval=TRUE}
 inf_mat <- matrix(c(1,1,1,0,0,1,1,1,1,0,1,1,1,1,0,1),4)
@@ -89,23 +101,24 @@ fun(c(1,1,0,0))
 
 ## Landscape Plotting
 
-NK 시스템 내에서 의존성이 커지면 거친 landscape가 그렇지 않으면 글로벌 피크가 존재하는 단순한 형태의 그림이 생성된다. 이를 확인할 수 있는 가장 간단한 방법은 3차원 그림을 그려보는 것이다.
+When the dependence increases in the NK system, a rough landscape is otherwise created, otherwise a simple picture with global peaks is created. The simplest way to check this is to draw a 3D picture.
+
+
 
 ```{r,eval=TRUE,fig.show='hold'}
 require(rNKm)
-n4k0 <- create_nkm_simple(N=6,K=1) #wrapper, N=6, K=1
+n4k0 <- create_nkm_simple(N=3,K=2) #wrapper, N=6, K=1
 test_plot(n4k0)
 ```
 
-다음 그림과 비교해보자.
+Let's compare it with the following picture.
 
 ```{r,eval=TRUE,fig.show='hold'}
 require(rNKm)
 n4k3 <- create_nkm_simple(N=6,K=5)
 test_plot(n4k3)
 ```
-
-좀 더 명확하게 결과를 보기 위해 직접 시뮬레이션을 실행하여 peak 지점들을 찾아보자. 물론 상세한 내용은 이후에 더욱 더 자세히 설명하기로 하고 우선 다음 코드를 실행한다.
+To see the results more clearly, let's run the simulation directly and find the peak points. Of course, the details will be described in more detail later, and first, execute the following code.
 
 ```{r,eval=TRUE}
 require(dplyr) #data manipulation package
@@ -116,7 +129,9 @@ result = search_hill_climbing_full(agent_size,nk.data$loc_ids,nk.data$nk_landsca
 do.call(rbind,lapply(result,function(x){x %>% filter(from>0 & to<0)})) #combining the final results
 ```
 
-결과에서 to=-1은 더 이상 갈 곳이 없다는 뜻이다. 따라서 to=-1인 곳의 from이 최종 종착지이며 stabilized=TRUE가 좀더 명확하게 그러한 점을 기술한다. 다음과 비교하자.
+In the result, to=-1 means there is nowhere to go. Therefore, from where to = -1 is the final destination, and stabilized = TRUE describes it more clearly. Let's compare it with the following.
+
+
 
 ```{r,eval=TRUE}
 require(dplyr)
@@ -126,5 +141,4 @@ agent_size=10
 result = search_hill_climbing_full(agent_size,nk.data$loc_ids,nk.data$nk_landscape)
 do.call(rbind,lapply(result,function(x){x %>% filter(from>0 & to<0)}))
 ```
-
-의존성이 작은 경우(K=0)보다 의존성이 큰 경우(K=5)가 더 많은 로컬 peak들을 가진다. 
+The case where the dependence is large (K=5) has more local peaks than the case where the dependence is small (K=0).
